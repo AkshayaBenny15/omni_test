@@ -1,9 +1,6 @@
 const axios = require("axios");
-
 const kafkaMessaging = require("../connections/kafka");
-
 const redisConnection = require("../connections/redis");
-
 const redis = redisConnection.getClient();
 
 async function startLoadTest() {
@@ -20,7 +17,6 @@ if (!exists) {
 const seq_key = Number(
   await redis.get("omni:test:seq")
 );
-
     const response = await axios.post(
       "http://192.9.200.31:5015/api/pstn/restart-Ack",
       {
@@ -132,6 +128,7 @@ const seq_key = Number(
     console.error("LOAD TEST ERROR:", error);
   }
 }
+
 
 // startLoadTest();
 module.exports = startLoadTest;
