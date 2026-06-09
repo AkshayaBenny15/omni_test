@@ -83,15 +83,15 @@ const seq_key = Number(
 
             cseq: seq_key,
 
-            call: `CALL_${topic}_${Date.now()}_${i}`,
+            call:"", // `CALL_${topic}_${Date.now()}_${i}`,
           },
 
           dtls: [
             {
               actn: 99,
               chnl: 3,
-              frnm: "8129643877",
-              tonm: "+917306743590",
+              frnm: "+917306743590",
+              tonm: "8129643877",
               rdnm: "",
               invt: {},
               dring: new Date().toISOString(),
@@ -115,12 +115,12 @@ const seq_key = Number(
   }
 
   // -----------------------------------
-  // WAIT FOR ALL 1000
+  // WAIT FOR ALL 100
   // -----------------------------------
 
   await Promise.all(publishPromises);
 
-  console.log(`1000 MESSAGES SENT TO ${topic}`);
+  console.log(`100 MESSAGES SENT TO ${topic}`);
 }
     console.log("LOAD TEST COMPLETED");
 

@@ -38,11 +38,13 @@ class KafkaMessaging {
       this.initKafka();
 
       if (!this.producer) {
-        this.producer = this.kafka.producer({
-          maxInFlightRequests: 1,
-          idempotent: true,
-          transactionTimeout: 30000,
-        });
+        this.producer = this.kafka.producer(
+        //   {
+        //   maxInFlightRequests: 1,
+        //   idempotent: true,
+        //   transactionTimeout: 30000,
+        // }
+      );
       }
 
       if (!this.isProducerConnected) {
@@ -65,7 +67,7 @@ class KafkaMessaging {
 
       if (!this.consumer) {
         this.consumer = this.kafka.consumer({
-          groupId: config.kafka.groupId,
+          groupId: "consumer500-test",//config.kafka.groupId,
           sessionTimeout: 30000,
           heartbeatInterval: 3000,
           maxWaitTimeInMs: 5000,
