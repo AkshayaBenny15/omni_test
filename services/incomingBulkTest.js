@@ -1,91 +1,53 @@
-const axios = require("axios");
 const kafkaMessaging = require("../connections/kafka");
 const redisConnection = require("../connections/redis");
+
 const redis = redisConnection.getClient();
 
-async function startLoadTest() {
+async function startLoadTest(response) {
   try {
+    // -----------------------------------
+    // Initialize sequence key
+    // -----------------------------------
+    const exists = await redis.exists("omni:test:seq");
+
+    if (!exists) {
+      await redis.set("omni:test:seq", 0);
+    }
 
     // -----------------------------------
-    // 1. CALL restart-Ack API
+    // Get token
     // -----------------------------------
-const exists = await redis.exists("omni:test:seq");
-
-if (!exists) {
-  await redis.set("omni:test:seq", 0);
-}
-const seq_key = Number(
-  await redis.get("omni:test:seq")
-);
-    const response = await axios.post(
-      "http://192.9.200.31:5015/api/pstn/restart-Ack",
-      {
-        header: {
-          mtyp: 20,
-          mfrm: 0,
-          ip: "192.9.200.234",
-          vers: "1.0.0.0",
-          strt: "2026-03-30T10:10:30.001Z",
-          actt: 0,
-          tchs: 95,
-        },
-      }
-    );
-
-    console.log("API RESPONSE RECEIVED");
-
-    // -----------------------------------
-    // 2. GET TOKEN
-    // -----------------------------------
-
     const token = response.data.header.tokn;
 
     console.log("TOKEN:", token);
 
     // -----------------------------------
-    // 3. GET TOPICS
+    // Get topics
     // -----------------------------------
-
     const topics = Object.values(response.data.body.bsnq);
 
     console.log("TOPICS:", topics);
 
     // -----------------------------------
-    // 4. SEND TO EACH TOPIC
+    // Send 1000 messages as one batch
     // -----------------------------------
+    for (const topic of topics) {
+      console.log(`SENDING TO TOPIC: ${topic}`);
 
-  for (const topic of topics) {
+      const messages = [];
 
-  console.log(`SENDING TO TOPIC: ${topic}`);
-
-  const publishPromises = [];
-
-  for (let i = 0; i < 1000; i++) {
-
-    publishPromises.push(
-      (async () => {
-
-        // -----------------------------------
-        // UNIQUE SEQUENCE
-        // -----------------------------------
-
+      for (let i = 0; i < 1000; i++) {
         const seq_key = await redis.incr("omni:test:seq");
 
-        // -----------------------------------
-        // PAYLOAD
-        // -----------------------------------
+        await redis.set(`cseq:${seq_key}`, Date.now());
 
         const payload = {
           hdr: {
             hash: token,
-
             mtyp: 10,
-
             cseq: seq_key,
-
-            call:"", // `CALL_${topic}_${Date.now()}_${i}`,
+            call: ""
           },
-
           dtls: [
             {
               actn: 99,
@@ -95,40 +57,31 @@ const seq_key = Number(
               rdnm: "",
               invt: {},
               dring: new Date().toISOString(),
-              evnt: 1,
-            },
-          ],
+              evnt: 1
+            }
+          ]
         };
 
-        // -----------------------------------
-        // PUBLISH
-        // -----------------------------------
+        messages.push({
+          key: String(seq_key),
+          value: JSON.stringify(payload)
+        });
+      }
 
-        return kafkaMessaging.publishMessage(
-          topic,
-          payload,
-          payload.hdr.call
-        );
+      await kafkaMessaging.publishMessage(
+        topic,
+        messages
+      );
 
-      })()
-    );
-  }
+      console.log(
+        `${messages.length} messages sent to ${topic}`
+      );
+    }
 
-  // -----------------------------------
-  // WAIT FOR ALL 100
-  // -----------------------------------
-
-  await Promise.all(publishPromises);
-
-  console.log(`100 MESSAGES SENT TO ${topic}`);
-}
     console.log("LOAD TEST COMPLETED");
-
   } catch (error) {
     console.error("LOAD TEST ERROR:", error);
   }
 }
 
-
-// startLoadTest();
 module.exports = startLoadTest;

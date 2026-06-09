@@ -191,13 +191,7 @@ class KafkaMessaging {
 
       const result = await this.producer.send({
         topic,
-        messages: [
-          {
-            key: key || null,
-            value: JSON.stringify(message),
-            timestamp: Date.now(),
-          },
-        ],
+        messages: message,
         compression: CompressionTypes.GZIP,
       });
 
