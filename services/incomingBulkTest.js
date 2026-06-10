@@ -5,68 +5,73 @@ const redis = redisConnection.getClient();
 
 async function startLoadTest(response) {
   try {
-    // -----------------------------------
-    // Initialize sequence key
-    // -----------------------------------
+
     const exists = await redis.exists("omni:test:seq");
 
     if (!exists) {
       await redis.set("omni:test:seq", 0);
     }
 
-    // -----------------------------------
-    // Get token
-    // -----------------------------------
     const token = response.data.header.tokn;
 
     console.log("TOKEN:", token);
 
-    // -----------------------------------
-    // Get topics
-    // -----------------------------------
-    const topics = Object.values(response.data.body.bsnq);
+    const topicMessages = {};
 
-    console.log("TOPICS:", topics);
+    // Total messages to generate
+    for (let i = 0; i < 1000; i++) {
 
-    // -----------------------------------
-    // Send 1000 messages as one batch
-    // -----------------------------------
-    for (const topic of topics) {
-      console.log(`SENDING TO TOPIC: ${topic}`);
+      const seq_key = await redis.incr(
+        "omni:test:seq"
+      );
+      console.log("Generated cseq:", seq_key);
 
-      const messages = [];
+      await redis.set(
+        `cseq:${seq_key}`,
+        Date.now()
+      );
 
-      for (let i = 0; i < 1000; i++) {
-        const seq_key = await redis.incr("omni:test:seq");
+      const bucket = seq_key % 10;
 
-        await redis.set(`cseq:${seq_key}`, Date.now());
+      const topic =
+        `omni.call.${bucket}`;
 
-        const payload = {
-          hdr: {
-            hash: token,
-            mtyp: 10,
-            cseq: seq_key,
-            call: ""
-          },
-          dtls: [
-            {
-              actn: 99,
-              chnl: 3,
-              frnm: "+917306743590",
-              tonm: "8129643877",
-              rdnm: "",
-              invt: {},
-              dring: new Date().toISOString(),
-              evnt: 1
-            }
-          ]
-        };
+      const payload = {
+        hdr: {
+          hash: token,
+          mtyp: 10,
+          cseq: seq_key,
+          call: ""
+        },
+        dtls: [
+          {
+            actn: 99,
+            chnl: 3,
+            frnm: "+917306743590",
+            tonm: "8129643877",
+            rdnm: "",
+            invt: {},
+            dring: new Date().toISOString(),
+            evnt: 1
+          }
+        ]
+      };
 
-        messages.push({
-          key: String(seq_key),
-          value: JSON.stringify(payload)
-        });
+      if (!topicMessages[topic]) {
+        topicMessages[topic] = [];
       }
+
+      topicMessages[topic].push({
+        key: String(seq_key),
+        value: JSON.stringify(payload)
+      });
+    }
+
+    // Send grouped batches
+    for (
+      const [topic, messages]
+      of Object.entries(topicMessages)
+    ) {
 
       await kafkaMessaging.publishMessage(
         topic,
@@ -79,8 +84,13 @@ async function startLoadTest(response) {
     }
 
     console.log("LOAD TEST COMPLETED");
+
   } catch (error) {
-    console.error("LOAD TEST ERROR:", error);
+
+    console.error(
+      "LOAD TEST ERROR:",
+      error
+    );
   }
 }
 

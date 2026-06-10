@@ -1,5 +1,5 @@
-
 const kafkaMessaging = require("../connections/kafka");
+
 const { CompressionTypes, CompressionCodecs } = require("kafkajs");
 const SnappyCodec = require("kafkajs-snappy");
 
@@ -10,7 +10,7 @@ const start = async () => {
 
     const consumer =
         await kafkaMessaging.initConsumer(
-            "consumer500-testv1"
+            "consumer5500-testv1"
         );
 
     const producer =
@@ -44,42 +44,53 @@ const start = async () => {
 
                     try {
 
-                        const data = JSON.parse(message.value.toString());
+                        const data = JSON.parse(
+                            message.value.toString()
+                        );
 
-                        const dtls =data.dtls?.[0];
-                        // const callid = data.hdr?.callid?.toString() || '';
+                        const dtls =
+                            data.dtls?.[0];
 
-                        if (dtls?.actn === 500 && dtls?.stat === 0) {
+                        if (
+                            dtls?.actn === 5500 &&
+                            dtls?.stat === 0
+                        ) {
 
                             const cseq = Number(
                                 data.hdr?.cseq
                             );
                             const chnl = dtls.chnl;
 
-                            if (
-                                Number.isNaN(cseq)
-                            ) {
+                            console.log(
+                                `Received actn=5500 cseq=${cseq}`
+                            );
 
-                                console.error(
-                                    "Invalid cseq:",
-                                    data.hdr?.cseq
-                                );
+                            const cetm = new Date().toISOString();
 
-                                resolveOffset(
-                                    message.offset
-                                );
+                            const response = {
+                                hdr: {
+                                    hash: data.hdr.hash,
+                                    mtyp: data.hdr.mtyp,
+                                    cseq: data.hdr.cseq,
+                                    call: data.hdr.call
+                                },
+                                dtls: [
+                                    {
+                                        actn: 5500,
+                                        stat: 1,
+                                        evnt: 3,
+                                        hupd: [
+                                            {
+                                                chnl: Number(dtls?.chnl?.[0] ?? 0),
+                                                cetm
+                                            }
+                                        ]
+                                    }
+                                ]
+                            };
 
-                                continue;
-                            }
 
-                            // Modify original message
-                            data.dtls[0].stat = 1;
 
-                            data.dtls[0].expr =
-                                new Date().toISOString();
-                            data.dtls[0].chnl = chnl;
-
-                            // Route based on cseq % 10
                             const bucket =
                                 cseq % 10;
 
@@ -88,7 +99,7 @@ const start = async () => {
 
                             if (
                                 !topicMessages[
-                                    targetTopic
+                                targetTopic
                                 ]
                             ) {
 
@@ -104,7 +115,7 @@ const start = async () => {
                                 key: String(cseq),
 
                                 value: JSON.stringify(
-                                    data
+                                    response
                                 )
                             });
 
@@ -120,13 +131,12 @@ const start = async () => {
                     } catch (err) {
 
                         console.error(
-                            "Message processing error:",
+                            "Processing Error:",
                             err
                         );
                     }
                 }
 
-                // Publish grouped messages
                 for (
                     const [
                         topic,
@@ -142,7 +152,7 @@ const start = async () => {
                     });
 
                     console.log(
-                        `Republished ${messages.length} messages to ${topic}`
+                        `Republished ${messages.length} messages to ${topic} `
                     );
                 }
 
@@ -161,7 +171,7 @@ const start = async () => {
     });
 
     console.log(
-        "Consumer500 Started..."
+        "Consumer5500 Started..."
     );
 };
 

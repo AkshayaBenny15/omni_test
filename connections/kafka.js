@@ -61,13 +61,13 @@ class KafkaMessaging {
   }
 
   // 🔹 Consumer init
-  async initConsumer() {
+  async initConsumer(groupId) {
     try {
       this.initKafka();
 
       if (!this.consumer) {
         this.consumer = this.kafka.consumer({
-          groupId: "consumer500-test",//config.kafka.groupId,
+          groupId: groupId ,//|| "consumer500-test",//config.kafka.groupId,
           sessionTimeout: 30000,
           heartbeatInterval: 3000,
           maxWaitTimeInMs: 5000,
