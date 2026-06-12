@@ -21,8 +21,9 @@ const main = async () => {
 
  while (true) {
     try {
+        await new Promise(resolve => setTimeout(resolve, 5000));
         const result = await startLoadTest(response);
-        console.log(result);
+        // console.log(result);
     } catch (err) {
         console.error("Load test failed:", err);
     }

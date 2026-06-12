@@ -76,6 +76,8 @@ const start = async () => {
                             data.dtls[0].stat = 1;
 
                             data.dtls[0].expr =
+                                new Date().toISOString() + 30000; // 30 seconds later
+                            data.dtls[0].anst=
                                 new Date().toISOString();
                             data.dtls[0].chnl = chnl;
 

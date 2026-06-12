@@ -61,9 +61,9 @@ const start = async () => {
                             );
                             const chnl = dtls.chnl;
 
-                            console.log(
-                                `Received actn=5500 cseq=${cseq}`
-                            );
+                            // console.log(
+                            //     `Received actn=5500 cseq=${cseq}`
+                            // );
 
                             const cetm = new Date().toISOString();
 
@@ -119,9 +119,9 @@ const start = async () => {
                                 )
                             });
 
-                            console.log(
-                                `Prepared cseq=${cseq} -> ${targetTopic}`
-                            );
+                            // console.log(
+                            //     `Prepared cseq=${cseq} -> ${targetTopic}`
+                            // );
                         }
 
                         resolveOffset(

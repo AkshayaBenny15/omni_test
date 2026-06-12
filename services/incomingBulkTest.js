@@ -17,21 +17,21 @@ async function startLoadTest(response) {
     console.log("TOKEN:", token);
 
     const topicMessages = {};
-
+const seq_key = await redis.incrby(
+        "omni:test:seq",1000
+      );
     // Total messages to generate
-    for (let i = 0; i < 1000; i++) {
+    for (let i = seq_key - 1000 ; i < seq_key ; i++) {
 
-      const seq_key = await redis.incr(
-        "omni:test:seq"
-      );
-      console.log("Generated cseq:", seq_key);
+     
+      // console.log("Generated cseq:", seq_key);
 
-      await redis.set(
-        `cseq:${seq_key}`,
-        Date.now()
-      );
+      // await redis.set(
+      //   `cseq:${seq_key}`,
+      //   Date.now()
+      // );
 
-      const bucket = seq_key % 10;
+      const bucket = i % 10;
 
       const topic =
         `omni.call.${bucket}`;
@@ -40,7 +40,7 @@ async function startLoadTest(response) {
         hdr: {
           hash: token,
           mtyp: 10,
-          cseq: seq_key,
+          cseq: i,
           call: ""
         },
         dtls: [
@@ -48,7 +48,7 @@ async function startLoadTest(response) {
             actn: 99,
             chnl: 3,
             frnm: "+917306743590",
-            tonm: "8129643877",
+            tonm: "3333333333",
             rdnm: "",
             invt: {},
             dring: new Date().toISOString(),
@@ -62,7 +62,7 @@ async function startLoadTest(response) {
       }
 
       topicMessages[topic].push({
-        key: String(seq_key),
+        key: String(i),
         value: JSON.stringify(payload)
       });
     }
